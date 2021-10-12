@@ -28,7 +28,7 @@ namespace PaymentGateway.Application.WriteOperations
             Product product = new Product();
             Account account = new Account();
 
-            account=database.Accounts.FirstOrDefault(x => x.Iban == operation.IbanOfAccount);
+            //account=database.Accounts.FirstOrDefault(x => x.Iban == operation.IbanOfAccount);
             product = database.Products.FirstOrDefault(x => x.Name == operation.Name);
 
             pxt.IdProduct = product.Id;
