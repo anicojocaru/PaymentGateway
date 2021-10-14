@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace PaymentGateway.Abstractions
 {
-    public interface IReadOperation
+    //interfata generica care primeste input + rezultat
+    //metoda generica primeste input si da un rezultat
+    public interface IReadOperation<TInput, TResult>
     {
-       
+        TResult PerformOperation(TInput query);
     }
 }

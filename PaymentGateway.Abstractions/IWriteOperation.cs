@@ -3,8 +3,8 @@
 namespace PaymentGateway.Abstractions
 {
     //interfata generica: <T>
-    public interface IWriteOperation<T>
+    public interface IWriteOperation<TCommand>
     {
-        void PerformOperation(T operation);
+        void PerformOperation(TCommand operation);
     }
 }

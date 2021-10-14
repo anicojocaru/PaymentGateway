@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Paymentgateway.ExternalService;
 using PaymentGateway.Abstractions;
 using PaymentGateway.Application;
+using PaymentGateway.Application.ReadOperations;
 using PaymentGateway.Application.WriteOperations;
 using PaymentGateway.Models;
 using PaymentGateway.PublishLanguage.NewFolder;
@@ -17,20 +18,18 @@ namespace PaymentGateway
         static IConfiguration Configuration;
         static void Main(string[] args)
         {
-            Account firstAccount = new Account();
-            firstAccount.Balance = 100;
             ////////////////////////////////////////////////////////
-            //enroll customer useCase
-            EnrollCustomerCommand customer1 = new EnrollCustomerCommand();
-            customer1.Name = "Andreea Cojocaru";
-            customer1.UniqueIdentifier = "2970304234566";
-            customer1.ClientType = "Individual";
-            customer1.AccountType = "Debit";
-            customer1.Currency = "RON";
+            //ENROLL CUSTOMER useCase
+            //EnrollCustomerCommand customer1 = new EnrollCustomerCommand();
+            //customer1.Name = "Andreea Cojocaru";
+            //customer1.UniqueIdentifier = "2970304234566";
+            //customer1.ClientType = "Individual";
+            //customer1.AccountType = "Debit";
+            //customer1.Currency = "RON";
 
-            IEventSender eventSender = new EventSender();
-            EnrollCustomerOperation enrollCustomerOperation1 = new EnrollCustomerOperation(eventSender);
-            enrollCustomerOperation1.PerformOperation(customer1);
+            //IEventSender eventSender = new EventSender();
+            //EnrollCustomerOperation enrollCustomerOperation1 = new EnrollCustomerOperation(eventSender);
+            //enrollCustomerOperation1.PerformOperation(customer1);
 
 
             //partea de Web api
@@ -62,39 +61,70 @@ namespace PaymentGateway
             };
 
             var enrollCustomerOperation = serviceProvider.GetRequiredService<EnrollCustomerOperation>();
+            enrollCustomerOperation.PerformOperation(enrollCustomer);
 
             /////////////////////////////////////////////////////////
-            //create account useCase
-            CreateAccountCommand account = new CreateAccountCommand();
-            account.Balance = 0;
-            account.Currency = "RON";
-            account.Iban = "ROBTRL124568584903";
-            account.Type = "Credit";
-            account.Limit = 100000000;
-            account.PersonUniqueIdentifier = customer1.UniqueIdentifier;
+            //CREATE ACCOUNT useCase
+            //CreateAccountCommand account = new CreateAccountCommand();
+            //account.Balance = 0;
+            //account.Currency = "RON";
+            //account.Iban = "ROBTRL124568584903";
+            //account.Type = "Credit";
+            //account.Limit = 100000000;
+            //account.PersonUniqueIdentifier = enrollCustomer.UniqueIdentifier;
 
-            CreateAccountOperation createAccountOperation = new CreateAccountOperation(eventSender, null);
-            createAccountOperation.PerformOperation(account);
+            //CreateAccountOperation createAccountOperation = new CreateAccountOperation(eventSender, null);
+            //createAccountOperation.PerformOperation(account);
 
-            //deposit money useCase
-            DepositMoneyCommand depositMoney = new DepositMoneyCommand();
-            depositMoney.Ammount = 200;
-            depositMoney.Currency = "RON";
-            depositMoney.Date = DateTime.UtcNow;
-            depositMoney.IbanOfAccount = account.Iban;
+            var createAccountDetails = new CreateAccountCommand
+            {
+                PersonUniqueIdentifier = "23",
+                Type = "Debit",
+                Currency = "Eur"
+            };
+            var createAccountOperation = serviceProvider.GetRequiredService<CreateAccountOperation>();
+            createAccountOperation.PerformOperation(createAccountDetails);
 
-            DepositMoneyOperation depositMoneyOperation = new DepositMoneyOperation(eventSender);
-            depositMoneyOperation.PerformOperation(depositMoney);
+            //////////////////////////////////////////////////////////////
+            //DEPOSIT MONEY useCase
+            //DepositMoneyCommand depositMoney = new DepositMoneyCommand();
+            //depositMoney.Ammount = 200;
+            //depositMoney.Currency = "RON";
+            //depositMoney.Date = DateTime.UtcNow;
+            //depositMoney.IbanOfAccount = createAccountDetails.Iban;
 
+            //DepositMoneyOperation depositMoneyOperation = new DepositMoneyOperation(eventSender);
+            //depositMoneyOperation.PerformOperation(depositMoney);
+            var depositDetails = new DepositMoneyCommand
+            {
+                IbanOfAccount = createAccountDetails.Iban,
+                Ammount = 23,
+                Currency = "Eur",
+                Date = DateTime.UtcNow
+            };
+
+            var makeDeposit = serviceProvider.GetRequiredService<DepositMoneyOperation>();
+            makeDeposit.PerformOperation(depositDetails);
+            /////////////////////////////////////////////////
             //withdraw money useCase
-            WithdrawMoneyCommand withdrawMoney = new WithdrawMoneyCommand();
-            withdrawMoney.Ammount = 100;
-            withdrawMoney.Currency = "RON";
-            withdrawMoney.Date = DateTime.UtcNow;
-            withdrawMoney.IbanOfAccount = account.Iban;
+            //WithdrawMoneyCommand withdrawMoney = new WithdrawMoneyCommand();
+            //withdrawMoney.Ammount = 100;
+            //withdrawMoney.Currency = "RON";
+            //withdrawMoney.Date = DateTime.UtcNow;
+            //withdrawMoney.IbanOfAccount = createAccountDetails.Iban;
 
-            WithdrawMoneyOperation withDrawMoneyOperation = new WithdrawMoneyOperation(eventSender);
-            withDrawMoneyOperation.PerformOperation(withdrawMoney);
+            //WithdrawMoneyOperation withDrawMoneyOperation = new WithdrawMoneyOperation(eventSender);
+            //withDrawMoneyOperation.PerformOperation(withdrawMoney);
+            var withdrawDetails = new WithdrawMoneyCommand
+            {
+                Ammount = 150,
+                Currency = "EUR",
+                Date=DateTime.UtcNow,
+                IbanOfAccount=createAccountDetails.Iban
+            };
+
+            var makeWithdraw = serviceProvider.GetRequiredService<WithdrawMoneyOperation>();
+            makeWithdraw.PerformOperation(withdrawDetails);
 
             //purchase product useCase
             //Product product = new Product();
@@ -106,9 +136,18 @@ namespace PaymentGateway
             //purchaseProduct.Limit = 10;
             //purchaseProduct.Name = "produs1";
             //purchaseProduct.IbanOfAccount = account.Iban;
-            
+
             //PurchaseProductOperation purchaseOperation = new PurchaseProductOperation(eventSender);
             //purchaseOperation.PerformOperation(purchaseProduct);
+
+            var query = new Application.ReadOperations.ListOfAccounts.Query
+            {
+                PersonId = 1
+            };
+
+            var handler = serviceProvider.GetRequiredService<ListOfAccounts.QueryHandler>();
+            var result = handler.PerformOperation(query);
+
 
         }
     }

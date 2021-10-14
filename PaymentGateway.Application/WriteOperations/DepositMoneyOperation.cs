@@ -13,22 +13,24 @@ namespace PaymentGateway.Application.WriteOperations
 {
     public class DepositMoneyOperation : IWriteOperation<DepositMoneyCommand>
     {
+        private readonly Database _database;
         public IEventSender eventSender;
-        public DepositMoneyOperation(IEventSender eventSender)
+        public DepositMoneyOperation(IEventSender eventSender, Database database)
         {
             this.eventSender = eventSender;
+            _database = database;
         }
 
         public void PerformOperation(DepositMoneyCommand operation)
         {
-            Database database = Database.GetInstance();
+            //Database database = Database.GetInstance();
 
             Transaction transaction = new Transaction();
             transaction.Ammount = operation.Ammount;
             transaction.Currency = operation.Currency;
             transaction.Date = DateTime.UtcNow;
 
-            var account = database.Accounts.FirstOrDefault(x => x.Iban == operation.IbanOfAccount);
+            var account = _database.Accounts.FirstOrDefault(x => x.Iban == operation.IbanOfAccount);
             if (account == null)
             {
                 throw new Exception("contul nu exista");
@@ -38,9 +40,9 @@ namespace PaymentGateway.Application.WriteOperations
                 throw new Exception("Valuta invalida");
             }
 
-            database.Transactions.Add(transaction);
+            _database.Transactions.Add(transaction);
             account.Balance = account.Balance + operation.Ammount;
-            database.SaveChanges();
+            _database.SaveChanges();
 
             AccountUpdated eventAccountUpdated = new(operation.Date, operation.Ammount, operation.IbanOfAccount);
             eventSender.SendEvent(eventAccountUpdated);

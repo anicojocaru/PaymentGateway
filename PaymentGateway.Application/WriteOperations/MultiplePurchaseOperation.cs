@@ -12,13 +12,14 @@ namespace PaymentGateway.Application.WriteOperations
 {
     public class MultiplePurchaseOperation : IWriteOperation<MultiplePurchaseCommand>
     {
+        private readonly Database _database;
         public void PerformOperation(MultiplePurchaseCommand operation)
         {
-            Database database = Database.GetInstance();
+            //Database database = Database.GetInstance();
 
             Transaction transaction = new Transaction();
 
-            Account account = database.Accounts.FirstOrDefault(x => x.Id == operation.AccountId);
+            Account account = _database.Accounts.FirstOrDefault(x => x.Id == operation.AccountId);
 
             if (account == null)
             {
@@ -28,7 +29,7 @@ namespace PaymentGateway.Application.WriteOperations
             var total = 0d;
             foreach (var item in operation.Details)
             {
-                Product product = database.Products.FirstOrDefault(x => x.Id == item.ProductId);
+                Product product = _database.Products.FirstOrDefault(x => x.Id == item.ProductId);
                 if (product.Limit < item.Quantity)
                 {
                     throw new Exception("Product not in stock");
@@ -46,7 +47,7 @@ namespace PaymentGateway.Application.WriteOperations
                 {
                     throw new Exception("Out of stock");
                 }
-                database.ProductsXTransactions.Add(pxt);
+                _database.ProductsXTransactions.Add(pxt);
             }
 
             if (account.Balance < total)
@@ -54,7 +55,7 @@ namespace PaymentGateway.Application.WriteOperations
                 throw new Exception("Insufficient funds");
             }
 
-            database.SaveChanges();
+            _database.SaveChanges();
         }
     }
 }

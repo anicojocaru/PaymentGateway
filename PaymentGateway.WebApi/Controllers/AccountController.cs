@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PaymentGateway.Application.ReadOperations;
 using PaymentGateway.Application.WriteOperations;
 using PaymentGateway.PublishLanguage.WriteSide;
 using System;
@@ -13,9 +14,11 @@ namespace PaymentGateway.WebApi.Controllers
     public class AccountController : ControllerBase
     {
         private readonly CreateAccountOperation _createAccountCommandHandler;
-        public AccountController(CreateAccountOperation createAccountCommandHandler)
+        private readonly ListOfAccounts.QueryHandler _queryHandler;
+        public AccountController(CreateAccountOperation createAccountCommandHandler, ListOfAccounts.QueryHandler queryHandler)
         {
             _createAccountCommandHandler = createAccountCommandHandler;
+            _queryHandler = queryHandler;
         }
 
         [HttpPost]
@@ -26,8 +29,15 @@ namespace PaymentGateway.WebApi.Controllers
             _createAccountCommandHandler.PerformOperation(command);
             return "OK";
         }
-    }
-    
 
+        [HttpGet]
+        [Route("ListOfAccounts")]
+        public List<ListOfAccounts.Model> GetListOFAccounts([FromQuery]ListOfAccounts.Query query)
+        {
+            var result = _queryHandler.PerformOperation(query);
+            return result;
+            
+        }
     }
+}
 

@@ -13,10 +13,12 @@ namespace PaymentGateway.Application.WriteOperations
 {
     public class EnrollCustomerOperation : IWriteOperation<EnrollCustomerCommand>
     {
+        private readonly Database _database;
         public IEventSender eventSender;
-        public EnrollCustomerOperation(IEventSender eventSender)
+        public EnrollCustomerOperation(IEventSender eventSender, Database database)
         {
             this.eventSender = eventSender;
+            _database = database;
         }
 
         public void PerformOperation(EnrollCustomerCommand operation)
@@ -24,12 +26,15 @@ namespace PaymentGateway.Application.WriteOperations
            
             var random = new Random();
 
-            Database database = Database.GetInstance(); //singleton
+            //Database database = Database.GetInstance(); //singleton
 
             Person person = new Person();
 
             person.Cnp = operation.UniqueIdentifier;
             person.Name = operation.Name;
+
+            //person.id=_database.Persons.Count+1;
+
             if (operation.ClientType == "Individual")
             {
                 person.TypeOfPerson = PersonType.Individual;
@@ -43,7 +48,7 @@ namespace PaymentGateway.Application.WriteOperations
                 throw new Exception("Usupported person type");
             }
 
-            database.Persons.Add(person);
+            _database.Persons.Add(person);
 
             Account account = new Account();
             account.Type = operation.AccountType;
@@ -51,9 +56,9 @@ namespace PaymentGateway.Application.WriteOperations
             account.Balance = 0;
             account.Iban = random.Next(100000).ToString();
 
-            database.Accounts.Add(account);
+            _database.Accounts.Add(account);
 
-            database.SaveChanges();
+            _database.SaveChanges();
 
             CustomerEnrolled eventCustomerEnroll = new(operation.Name,operation.UniqueIdentifier,operation.ClientType);
             eventSender.SendEvent(eventCustomerEnroll);

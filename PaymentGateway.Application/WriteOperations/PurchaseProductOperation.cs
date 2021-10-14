@@ -14,13 +14,15 @@ namespace PaymentGateway.Application.WriteOperations
     public class PurchaseProductOperation : IWriteOperation<PurchaseProductCommand>
     {
         public IEventSender eventSender;
-        public PurchaseProductOperation(IEventSender eventSender)
+        private readonly Database _database;
+        public PurchaseProductOperation(IEventSender eventSender, Database database)
         {
             this.eventSender = eventSender;
+            database = _database;
         }
         public void PerformOperation(PurchaseProductCommand operation)
         {
-            Database database = Database.GetInstance();
+            //Database database = Database.GetInstance();
 
             ProductXTransaction pxt = new ProductXTransaction();
 
@@ -29,7 +31,7 @@ namespace PaymentGateway.Application.WriteOperations
             Account account = new Account();
 
             //account=database.Accounts.FirstOrDefault(x => x.Iban == operation.IbanOfAccount);
-            product = database.Products.FirstOrDefault(x => x.Name == operation.Name);
+            product = _database.Products.FirstOrDefault(x => x.Name == operation.Name);
 
             pxt.IdProduct = product.Id;
             pxt.IdTransaction = transaction.Id;
@@ -48,11 +50,11 @@ namespace PaymentGateway.Application.WriteOperations
             product.Currency = operation.Currency;
            
 
-            database.Transactions.Add(transaction);
-            database.ProductsXTransactions.Add(pxt);
+            _database.Transactions.Add(transaction);
+            _database.ProductsXTransactions.Add(pxt);
 
             
-            database.SaveChanges();
+            _database.SaveChanges();
            
 
             ProductPurchased eventProductPurchased = new(operation.Name, operation.Value, operation.Currency, operation.Limit);

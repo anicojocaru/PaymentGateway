@@ -15,40 +15,42 @@ namespace PaymentGateway.Application.WriteOperations
     {
         private readonly IEventSender _eventSender;
         private readonly AccountOptions _accountOptions;
-        public CreateAccountOperation(IEventSender eventSender, AccountOptions accountOptions)
+        private readonly Database _database;
+        public CreateAccountOperation(IEventSender eventSender, AccountOptions accountOptions, Database database)
         {
             _eventSender = eventSender;
             _accountOptions = accountOptions;
+            _database = database;
         }
 
         public void PerformOperation(CreateAccountCommand operation)
         {
             var random = new Random();
 
-            Database database = Database.GetInstance();
+            //Database database = Database.GetInstance();
             Account account = new Account();
             account.Iban = string.IsNullOrEmpty(operation.Iban) ? random.Next(100000).ToString() : operation.Iban;
             account.Limit = operation.Limit;
             account.Balance = operation.Balance;
             account.Currency = operation.Currency;
-            account.Id = database.Accounts.Count + 1;
+            account.Id = _database.Accounts.Count + 1;
 
-            var person = database.Persons.FirstOrDefault(x => x.Cnp == operation.PersonUniqueIdentifier);
+            var person = _database.Persons.FirstOrDefault(x => x.Cnp == operation.PersonUniqueIdentifier);
             if (operation.PersonId.HasValue)
             {
-                person = database.Persons.FirstOrDefault(x => x.PersonId == operation.PersonId); //person id
+                person = _database.Persons.FirstOrDefault(x => x.PersonId == operation.PersonId); //person id
             }
             else
             {
-                person = database.Persons.FirstOrDefault(x => x.Cnp == operation.PersonUniqueIdentifier); //cnp
+                person = _database.Persons.FirstOrDefault(x => x.Cnp == operation.PersonUniqueIdentifier); //cnp
             }
             if (person == null)
             {
                 throw new Exception("Person not found");
             }
 
-            database.Accounts.Add(account);
-            database.SaveChanges();
+            _database.Accounts.Add(account);
+            _database.SaveChanges();
 
             AccountCreated eventAccountCreated = new(operation.Iban, operation.Type, operation.Balance, operation.PersonUniqueIdentifier);
             _eventSender.SendEvent(eventAccountCreated);
