@@ -1,28 +1,30 @@
-﻿using PaymentGateway.Abstractions;
+﻿using MediatR;
+using PaymentGateway.Abstractions;
 using PaymentGateway.Data;
 using PaymentGateway.Models;
+using PaymentGateway.PublishLanguage.Commands;
 using PaymentGateway.PublishLanguage.Events;
-using PaymentGateway.PublishLanguage.WriteSide;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PaymentGateway.Application.WriteOperations
 {
-    public class PurchaseProductOperation : IWriteOperation<PurchaseProductCommand>
+    public class PurchaseProductOperation : IRequest<PurchaseProductCommand>
     {
-        public IEventSender eventSender;
+        private readonly IMediator _mediator;
         private readonly Database _database;
-        public PurchaseProductOperation(IEventSender eventSender, Database database)
+        public PurchaseProductOperation(IMediator mediator, Database database)
         {
-            this.eventSender = eventSender;
-            database = _database;
+            _mediator = mediator;
+            _database = database;
         }
-        public void PerformOperation(PurchaseProductCommand operation)
+        public async Task<Unit> Handle(PurchaseProductCommand request, CancellationToken cancellationToken)
         {
-            //Database database = Database.GetInstance();
+            
 
             ProductXTransaction pxt = new ProductXTransaction();
 
@@ -31,23 +33,23 @@ namespace PaymentGateway.Application.WriteOperations
             Account account = new Account();
 
             //account=database.Accounts.FirstOrDefault(x => x.Iban == operation.IbanOfAccount);
-            product = _database.Products.FirstOrDefault(x => x.Name == operation.Name);
+            product = _database.Products.FirstOrDefault(x => x.Name == request.Name);
 
             pxt.IdProduct = product.Id;
             pxt.IdTransaction = transaction.Id;
 
-            if(operation.Value > account.Balance)
+            if(request.Value > account.Balance)
             {
                 throw new Exception("Fond insuficient");
             }
-            if (operation.Limit > product.Limit)
+            if (request.Limit > product.Limit)
             {
                 throw new Exception("Nu avem atatea produse disponibile");
             }
-            product.Limit = operation.Limit;
-            product.Name = operation.Name;
-            product.Value = operation.Value;
-            product.Currency = operation.Currency;
+            product.Limit = request.Limit;
+            product.Name = request.Name;
+            product.Value = request.Value;
+            product.Currency = request.Currency;
            
 
             _database.Transactions.Add(transaction);
@@ -57,8 +59,9 @@ namespace PaymentGateway.Application.WriteOperations
             _database.SaveChanges();
            
 
-            ProductPurchased eventProductPurchased = new(operation.Name, operation.Value, operation.Currency, operation.Limit);
-            eventSender.SendEvent(eventProductPurchased);
+            ProductPurchased eventProductPurchased = new(request.Name, request.Value, request.Currency, request.Limit);
+            await _mediator.Publish(eventProductPurchased, cancellationToken);
+            return Unit.Value;
         }
         class MultipleProductPurchase 
         {

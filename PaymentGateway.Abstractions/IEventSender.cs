@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PaymentGateway.Abstractions
-{
-    public interface IEventSender
-    {
-        void SendEvent(object e);
-    }
-}
+//namespace PaymentGateway.Abstractions
+
+//{
+//    public interface IEventSender // INotification
+//    {
+//        void SendEvent(object obj);
+//    }
+//}

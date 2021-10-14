@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MediatR;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace PaymentGateway.PublishLanguage.Events
 {
-    public class AccountUpdated
+    public class AccountUpdated:INotification
     {
         public DateTime Date { get; set; }
         public double Ammount { get; set; }

@@ -7,21 +7,23 @@ using PaymentGateway.Abstractions;
 using PaymentGateway.Data;
 using PaymentGateway.Models;
 using PaymentGateway.PublishLanguage.Events;
-using PaymentGateway.PublishLanguage.NewFolder;
+using PaymentGateway.PublishLanguage.Commands;
+using MediatR;
+using System.Threading;
 
 namespace PaymentGateway.Application.WriteOperations
 {
-    public class EnrollCustomerOperation : IWriteOperation<EnrollCustomerCommand>
+    public class EnrollCustomerOperation : IRequest<EnrollCustomerCommand>
     {
         private readonly Database _database;
-        public IEventSender eventSender;
-        public EnrollCustomerOperation(IEventSender eventSender, Database database)
+        private readonly IMediator _mediator;
+        public EnrollCustomerOperation(IMediator mediator, Database database)
         {
-            this.eventSender = eventSender;
+            _mediator = mediator;
             _database = database;
         }
 
-        public void PerformOperation(EnrollCustomerCommand operation)
+        public async Task<Unit> Handle(EnrollCustomerCommand request, CancellationToken cancellationToken)
         {
            
             var random = new Random();
@@ -30,16 +32,16 @@ namespace PaymentGateway.Application.WriteOperations
 
             Person person = new Person();
 
-            person.Cnp = operation.UniqueIdentifier;
-            person.Name = operation.Name;
+            person.Cnp = request.UniqueIdentifier;
+            person.Name = request.Name;
 
             //person.id=_database.Persons.Count+1;
 
-            if (operation.ClientType == "Individual")
+            if (request.ClientType == "Individual")
             {
                 person.TypeOfPerson = PersonType.Individual;
             }
-            else if(operation.ClientType=="Company")
+            else if(request.ClientType=="Company")
             {
                 person.TypeOfPerson = PersonType.Company;
             }
@@ -51,8 +53,8 @@ namespace PaymentGateway.Application.WriteOperations
             _database.Persons.Add(person);
 
             Account account = new Account();
-            account.Type = operation.AccountType;
-            account.Currency = operation.Currency;
+            account.Type = request.AccountType;
+            account.Currency = request.Currency;
             account.Balance = 0;
             account.Iban = random.Next(100000).ToString();
 
@@ -60,10 +62,11 @@ namespace PaymentGateway.Application.WriteOperations
 
             _database.SaveChanges();
 
-            CustomerEnrolled eventCustomerEnroll = new(operation.Name,operation.UniqueIdentifier,operation.ClientType);
-            eventSender.SendEvent(eventCustomerEnroll);
+            CustomerEnrolled eventCustomerEnroll = new(request.Name, request.UniqueIdentifier, request.ClientType);
+            await _mediator.Publish(eventCustomerEnroll, cancellationToken);
+            return Unit.Value;
         }
 
-      
+     
     }
 }

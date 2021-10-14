@@ -1,48 +1,49 @@
-﻿using PaymentGateway.Abstractions;
+﻿using MediatR;
+using PaymentGateway.Abstractions;
 using PaymentGateway.Data;
 using PaymentGateway.Models;
 using PaymentGateway.PublishLanguage.Events;
-using PaymentGateway.PublishLanguage.WriteSide;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using PaymentGateway.PublishLanguage.Commands;
 
 namespace PaymentGateway.Application.WriteOperations
 {
-    public class CreateAccountOperation : IWriteOperation<CreateAccountCommand>
+    public class CreateAccountOperation : IRequestHandler<CreateAccountCommand>
     {
-        private readonly IEventSender _eventSender;
+        //private readonly IEventSender _eventSender;
+        private readonly IMediator _mediator;
         private readonly AccountOptions _accountOptions;
         private readonly Database _database;
-        public CreateAccountOperation(IEventSender eventSender, AccountOptions accountOptions, Database database)
+        public CreateAccountOperation(IMediator mediator, AccountOptions accountOptions, Database database)
         {
-            _eventSender = eventSender;
+            _mediator = mediator;
             _accountOptions = accountOptions;
             _database = database;
         }
 
-        public void PerformOperation(CreateAccountCommand operation)
+        public async Task<Unit> Handle(CreateAccountCommand request, CancellationToken cancellationToken)
         {
             var random = new Random();
-
-            //Database database = Database.GetInstance();
             Account account = new Account();
-            account.Iban = string.IsNullOrEmpty(operation.Iban) ? random.Next(100000).ToString() : operation.Iban;
-            account.Limit = operation.Limit;
-            account.Balance = operation.Balance;
-            account.Currency = operation.Currency;
+            account.Iban = string.IsNullOrEmpty(request.Iban) ? random.Next(100000).ToString() : request.Iban;
+            account.Limit = request.Limit;
+            account.Balance = request.Balance;
+            account.Currency = request.Currency;
             account.Id = _database.Accounts.Count + 1;
 
-            var person = _database.Persons.FirstOrDefault(x => x.Cnp == operation.PersonUniqueIdentifier);
-            if (operation.PersonId.HasValue)
+            var person = _database.Persons.FirstOrDefault(x => x.Cnp == request.PersonUniqueIdentifier);
+            if (request.PersonId.HasValue)
             {
-                person = _database.Persons.FirstOrDefault(x => x.PersonId == operation.PersonId); //person id
+                person = _database.Persons.FirstOrDefault(x => x.PersonId == request.PersonId); //person id
             }
             else
             {
-                person = _database.Persons.FirstOrDefault(x => x.Cnp == operation.PersonUniqueIdentifier); //cnp
+                person = _database.Persons.FirstOrDefault(x => x.Cnp == request.PersonUniqueIdentifier); //cnp
             }
             if (person == null)
             {
@@ -52,8 +53,10 @@ namespace PaymentGateway.Application.WriteOperations
             _database.Accounts.Add(account);
             _database.SaveChanges();
 
-            AccountCreated eventAccountCreated = new(operation.Iban, operation.Type, operation.Balance, operation.PersonUniqueIdentifier);
-            _eventSender.SendEvent(eventAccountCreated);
+            AccountCreated eventAccountCreated = new(request.Iban, request.Type, request.Balance, request.PersonUniqueIdentifier);
+            await _mediator.Publish(eventAccountCreated, cancellationToken);
+            return Unit.Value;
         }
+
     }
 }

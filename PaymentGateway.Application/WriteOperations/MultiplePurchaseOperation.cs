@@ -1,25 +1,27 @@
-﻿using PaymentGateway.Abstractions;
+﻿using MediatR;
+using PaymentGateway.Abstractions;
 using PaymentGateway.Data;
 using PaymentGateway.Models;
-using PaymentGateway.PublishLanguage.WriteSide;
+using PaymentGateway.PublishLanguage.Commands;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PaymentGateway.Application.WriteOperations
 {
-    public class MultiplePurchaseOperation : IWriteOperation<MultiplePurchaseCommand>
+    public class MultiplePurchaseOperation : IRequest<MultiplePurchaseCommand>
     {
         private readonly Database _database;
-        public void PerformOperation(MultiplePurchaseCommand operation)
+        public Task<Unit> Handle(MultiplePurchaseCommand request, CancellationToken cancellationToken)
         {
             //Database database = Database.GetInstance();
 
             Transaction transaction = new Transaction();
 
-            Account account = _database.Accounts.FirstOrDefault(x => x.Id == operation.AccountId);
+            Account account = _database.Accounts.FirstOrDefault(x => x.Id == request.AccountId);
 
             if (account == null)
             {
@@ -27,7 +29,7 @@ namespace PaymentGateway.Application.WriteOperations
             }
 
             var total = 0d;
-            foreach (var item in operation.Details)
+            foreach (var item in request.Details)
             {
                 Product product = _database.Products.FirstOrDefault(x => x.Id == item.ProductId);
                 if (product.Limit < item.Quantity)
@@ -56,6 +58,7 @@ namespace PaymentGateway.Application.WriteOperations
             }
 
             _database.SaveChanges();
+            return Unit.Task;
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using PaymentGateway.Abstractions;
 using PaymentGateway.Data;
-using PaymentGateway.PublishLanguage.WriteSide;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,51 +7,55 @@ using System.Text;
 using System.Threading.Tasks;
 using PaymentGateway.Models;
 using PaymentGateway.PublishLanguage.Events;
+using MediatR;
+using PaymentGateway.PublishLanguage.Commands;
+using System.Threading;
 
 namespace PaymentGateway.Application.WriteOperations
 {
-    public class WithdrawMoneyOperation : IWriteOperation<WithdrawMoneyCommand>
+    public class WithdrawMoneyOperation : IRequest<WithdrawMoneyCommand>
     {
-        public IEventSender eventSender;
+        private readonly IMediator _mediator;
         private readonly Database _database;
-        public WithdrawMoneyOperation(IEventSender eventSender, Database database)
+        public WithdrawMoneyOperation(IMediator mediator, Database database)
         {
-            this.eventSender = eventSender;
+            _mediator = mediator;
             _database = database;
         }
-        public void PerformOperation(WithdrawMoneyCommand operation)
+        public async Task<Unit> Handle(WithdrawMoneyCommand request, CancellationToken cancellationToken)
         {
             //Database database = Database.GetInstance();
 
             Transaction transaction = new Transaction();
-            transaction.Ammount = operation.Ammount;
-            transaction.Currency = operation.Currency;
+            transaction.Ammount = request.Ammount;
+            transaction.Currency = request.Currency;
             transaction.Date = DateTime.UtcNow;
 
-            var account = _database.Accounts.FirstOrDefault(x => x.Iban == operation.IbanOfAccount);
+            var account = _database.Accounts.FirstOrDefault(x => x.Iban == request.IbanOfAccount);
             if (account == null)
             {
                 throw new Exception("contul nu exista");
             }
-            if (account.Currency != operation.Currency)
+            if (account.Currency != request.Currency)
             {
                 throw new Exception("Valuta invalida");
             }
 
             _database.Transactions.Add(transaction);
 
-            if(account.Balance<operation.Ammount)
+            if(account.Balance< request.Ammount)
             {
                 throw new Exception("Fonduri insuficiente");
             }
             else
             {
-                account.Balance -= operation.Ammount;
+                account.Balance -= request.Ammount;
             }
             _database.SaveChanges();
 
-            AccountUpdated eventAccountUpdated = new(operation.Date, operation.Ammount, operation.IbanOfAccount);
-            eventSender.SendEvent(eventAccountUpdated);
+            AccountUpdated eventAccountUpdated = new(request.Date, request.Ammount, request.IbanOfAccount);
+            await _mediator.Publish(eventAccountUpdated, cancellationToken);
+            return Unit.Value;
         }
     }
 }

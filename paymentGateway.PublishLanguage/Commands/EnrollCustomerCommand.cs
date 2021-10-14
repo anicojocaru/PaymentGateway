@@ -1,13 +1,14 @@
-﻿using PaymentGateway.Models;
+﻿using MediatR;
+using PaymentGateway.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PaymentGateway.PublishLanguage.NewFolder
+namespace PaymentGateway.PublishLanguage.Commands
 {
-    public class EnrollCustomerCommand
+    public class EnrollCustomerCommand : IRequest
     {
         public string Name { get; set; }
         public string UniqueIdentifier { get; set; }

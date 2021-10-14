@@ -1,13 +1,14 @@
-﻿using PaymentGateway.Models;
+﻿using MediatR;
+using PaymentGateway.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PaymentGateway.PublishLanguage.WriteSide
+namespace PaymentGateway.PublishLanguage.Commands
 {
-    public class DepositMoneyCommand
+    public class DepositMoneyCommand:IRequest
     {
         public double Ammount { get; set; }
         public string Currency { get; set; }

@@ -6,8 +6,7 @@ using PaymentGateway.Application;
 using PaymentGateway.Application.ReadOperations;
 using PaymentGateway.Application.WriteOperations;
 using PaymentGateway.Models;
-using PaymentGateway.PublishLanguage.NewFolder;
-using PaymentGateway.PublishLanguage.WriteSide;
+using PaymentGateway.PublishLanguage.Commands;
 using System;
 using System.IO;
 
@@ -44,7 +43,7 @@ namespace PaymentGateway
             var services = new ServiceCollection();
             services.RegisterBusinessServices(Configuration);
 
-            services.AddSingleton<IEventSender, EventSender>();
+            //services.AddSingleton<IEventSender, EventSender>();
             services.AddSingleton(Configuration);
 
             // build
@@ -61,7 +60,7 @@ namespace PaymentGateway
             };
 
             var enrollCustomerOperation = serviceProvider.GetRequiredService<EnrollCustomerOperation>();
-            enrollCustomerOperation.PerformOperation(enrollCustomer);
+            enrollCustomerOperation.Handle(enrollCustomer, default).GetAwaiter().GetResult();
 
             /////////////////////////////////////////////////////////
             //CREATE ACCOUNT useCase
@@ -83,7 +82,7 @@ namespace PaymentGateway
                 Currency = "Eur"
             };
             var createAccountOperation = serviceProvider.GetRequiredService<CreateAccountOperation>();
-            createAccountOperation.PerformOperation(createAccountDetails);
+            createAccountOperation.Handle(createAccountDetails, default).GetAwaiter().GetResult();
 
             //////////////////////////////////////////////////////////////
             //DEPOSIT MONEY useCase
@@ -104,7 +103,7 @@ namespace PaymentGateway
             };
 
             var makeDeposit = serviceProvider.GetRequiredService<DepositMoneyOperation>();
-            makeDeposit.PerformOperation(depositDetails);
+            makeDeposit.Handle(depositDetails, default).GetAwaiter().GetResult();
             /////////////////////////////////////////////////
             //withdraw money useCase
             //WithdrawMoneyCommand withdrawMoney = new WithdrawMoneyCommand();
@@ -124,7 +123,7 @@ namespace PaymentGateway
             };
 
             var makeWithdraw = serviceProvider.GetRequiredService<WithdrawMoneyOperation>();
-            makeWithdraw.PerformOperation(withdrawDetails);
+            makeWithdraw.Handle(withdrawDetails, default).GetAwaiter().GetResult();
 
             //purchase product useCase
             //Product product = new Product();
@@ -146,7 +145,7 @@ namespace PaymentGateway
             };
 
             var handler = serviceProvider.GetRequiredService<ListOfAccounts.QueryHandler>();
-            var result = handler.PerformOperation(query);
+            var result = handler.Handle(query, default).GetAwaiter().GetResult();
 
 
         }
