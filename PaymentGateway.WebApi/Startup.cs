@@ -8,7 +8,8 @@ using PaymentGateway.Application;
 using PaymentGateway.Application.WriteOperations;
 using PaymentGateway.WebApi.Swagger;
 using MediatR;
-using PaymentGateway.Application.ReadOperations;
+using PaymentGateway.Application.Queries;
+
 
 namespace PaymentGateway.WebApi
 {

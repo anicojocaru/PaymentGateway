@@ -3,36 +3,26 @@ using Microsoft.Extensions.DependencyInjection;
 using Paymentgateway.ExternalService;
 using PaymentGateway.Abstractions;
 using PaymentGateway.Application;
-using PaymentGateway.Application.ReadOperations;
+using PaymentGateway.Application.Queries;
 using PaymentGateway.Application.WriteOperations;
 using PaymentGateway.Models;
 using PaymentGateway.PublishLanguage.Commands;
 using System;
 using System.IO;
 using MediatR;
+using System.Threading.Tasks;
+using System.Threading;
+using PaymentGateway.Data;
+
 
 namespace PaymentGateway
 {
     class Program
     {
         static IConfiguration Configuration;
-        static void Main(string[] args)
-        {
-            ////////////////////////////////////////////////////////
-            //ENROLL CUSTOMER useCase
-            //EnrollCustomerCommand customer1 = new EnrollCustomerCommand();
-            //customer1.Name = "Andreea Cojocaru";
-            //customer1.UniqueIdentifier = "2970304234566";
-            //customer1.ClientType = "Individual";
-            //customer1.AccountType = "Debit";
-            //customer1.Currency = "RON";
-
-            //IEventSender eventSender = new EventSender();
-            //EnrollCustomerOperation enrollCustomerOperation1 = new EnrollCustomerOperation(eventSender);
-            //enrollCustomerOperation1.PerformOperation(customer1);
-
-
-            //partea de Web api
+        static async Task Main(string[] args)
+        { 
+         //partea de Web api
             Configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -40,18 +30,24 @@ namespace PaymentGateway
                 .AddEnvironmentVariables()
                 .Build();
 
-            // setup
+         // setup
             var services = new ServiceCollection();
+            var source = new CancellationTokenSource();
+            var cancellationToken = source.Token;
+
             services.AddMediatR(typeof(ListOfAccounts).Assembly, typeof(AllEventsHandler).Assembly);
             services.RegisterBusinessServices(Configuration);
 
             //services.AddSingleton<IEventSender, EventSender>();
             services.AddSingleton(Configuration);
 
-            // build
+         // build
             var serviceProvider = services.BuildServiceProvider();
+            var database = serviceProvider.GetRequiredService<Database>();
+            var mediator = serviceProvider.GetRequiredService<IMediator>();
 
-            // use
+         // use
+         //ENROLL CUSTOMER USE CASE 
             var enrollCustomer = new EnrollCustomerCommand
             {
                 ClientType = "Company",
@@ -61,8 +57,10 @@ namespace PaymentGateway
                 UniqueIdentifier = "23"
             };
 
-            var enrollCustomerOperation = serviceProvider.GetRequiredService<EnrollCustomerOperation>();
-            enrollCustomerOperation.Handle(enrollCustomer, default).GetAwaiter().GetResult();
+            //var enrollCustomerOperation = serviceProvider.GetRequiredService<EnrollCustomerOperation>();
+            //await enrollCustomerOperation.Handle(enrollCustomer, default);
+
+            await mediator.Send(enrollCustomer, cancellationToken);
 
             /////////////////////////////////////////////////////////
             //CREATE ACCOUNT useCase
@@ -83,20 +81,14 @@ namespace PaymentGateway
                 Type = "Debit",
                 Currency = "Eur"
             };
-            var createAccountOperation = serviceProvider.GetRequiredService<CreateAccountOperation>();
-            createAccountOperation.Handle(createAccountDetails, default).GetAwaiter().GetResult();
+            //var makeAccountOperation = serviceProvider.GetRequiredService<CreateAccount>();
+            //makeAccountOperation.Handle(makeAccountDetails, default).GetAwaiter().GetResult();
+
+            await mediator.Send(createAccountDetails, cancellationToken);
 
             //////////////////////////////////////////////////////////////
             //DEPOSIT MONEY useCase
-            //DepositMoneyCommand depositMoney = new DepositMoneyCommand();
-            //depositMoney.Ammount = 200;
-            //depositMoney.Currency = "RON";
-            //depositMoney.Date = DateTime.UtcNow;
-            //depositMoney.IbanOfAccount = createAccountDetails.Iban;
-
-            //DepositMoneyOperation depositMoneyOperation = new DepositMoneyOperation(eventSender);
-            //depositMoneyOperation.PerformOperation(depositMoney);
-            var depositDetails = new DepositMoneyCommand
+            var makeDeposit = new DepositMoneyCommand
             {
                 IbanOfAccount = createAccountDetails.Iban,
                 Ammount = 23,
@@ -104,19 +96,13 @@ namespace PaymentGateway
                 Date = DateTime.UtcNow
             };
 
-            var makeDeposit = serviceProvider.GetRequiredService<DepositMoneyOperation>();
-            makeDeposit.Handle(depositDetails, default).GetAwaiter().GetResult();
+            //var makeDeposit = serviceProvider.GetRequiredService<DepositMoney>();
+            //makeDeposit.Handle(depositDetails, default).GetAwaiter().GetResult();
+            await mediator.Send(makeDeposit, cancellationToken);
+           
             /////////////////////////////////////////////////
-            //withdraw money useCase
-            //WithdrawMoneyCommand withdrawMoney = new WithdrawMoneyCommand();
-            //withdrawMoney.Ammount = 100;
-            //withdrawMoney.Currency = "RON";
-            //withdrawMoney.Date = DateTime.UtcNow;
-            //withdrawMoney.IbanOfAccount = createAccountDetails.Iban;
-
-            //WithdrawMoneyOperation withDrawMoneyOperation = new WithdrawMoneyOperation(eventSender);
-            //withDrawMoneyOperation.PerformOperation(withdrawMoney);
-            var withdrawDetails = new WithdrawMoneyCommand
+            ///MAKE WITHDRAW use case
+            var makeWithdraw = new WithdrawMoneyCommand
             {
                 Ammount = 150,
                 Currency = "EUR",
@@ -124,10 +110,12 @@ namespace PaymentGateway
                 IbanOfAccount=createAccountDetails.Iban
             };
 
-            var makeWithdraw = serviceProvider.GetRequiredService<WithdrawMoneyOperation>();
-            makeWithdraw.Handle(withdrawDetails, default).GetAwaiter().GetResult();
+            //var makeWithdraw = serviceProvider.GetRequiredService<WithdrawMoney>();
+            //makeWithdraw.Handle(withdrawDetails, default).GetAwaiter().GetResult();
+            await mediator.Send(makeWithdraw, cancellationToken);
 
-            //purchase product useCase
+            /////////////////////////////////////////////////////////////
+            //PURCHASE PRODUCT useCase
             //Product product = new Product();
             //product.Limit = 10000;
 
@@ -141,13 +129,14 @@ namespace PaymentGateway
             //PurchaseProductOperation purchaseOperation = new PurchaseProductOperation(eventSender);
             //purchaseOperation.PerformOperation(purchaseProduct);
 
-            var query = new Application.ReadOperations.ListOfAccounts.Query
+            var query = new Application.Queries.ListOfAccounts.Query
             {
                 PersonId = 1
             };
 
-            var handler = serviceProvider.GetRequiredService<ListOfAccounts.QueryHandler>();
-            var result = handler.Handle(query, default).GetAwaiter().GetResult();
+            //var handler = serviceProvider.GetRequiredService<ListOfAccounts.QueryHandler>();
+            //var result = handler.Handle(query, default).GetAwaiter().GetResult();
+            var result = await mediator.Send(query, cancellationToken);
 
 
         }

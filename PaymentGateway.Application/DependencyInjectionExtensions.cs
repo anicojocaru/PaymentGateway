@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static PaymentGateway.Application.ReadOperations.ListOfAccounts;
+using static PaymentGateway.Application.Queries.ListOfAccounts;
 
 namespace PaymentGateway.Application
 {
