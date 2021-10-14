@@ -9,6 +9,7 @@ using PaymentGateway.Models;
 using PaymentGateway.PublishLanguage.Commands;
 using System;
 using System.IO;
+using MediatR;
 
 namespace PaymentGateway
 {
@@ -41,6 +42,7 @@ namespace PaymentGateway
 
             // setup
             var services = new ServiceCollection();
+            services.AddMediatR(typeof(ListOfAccounts).Assembly, typeof(AllEventsHandler).Assembly);
             services.RegisterBusinessServices(Configuration);
 
             //services.AddSingleton<IEventSender, EventSender>();

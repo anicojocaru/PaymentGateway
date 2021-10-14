@@ -7,6 +7,8 @@ using PaymentGateway.Abstractions;
 using PaymentGateway.Application;
 using PaymentGateway.Application.WriteOperations;
 using PaymentGateway.WebApi.Swagger;
+using MediatR;
+using PaymentGateway.Application.ReadOperations;
 
 namespace PaymentGateway.WebApi
 {
@@ -25,10 +27,12 @@ namespace PaymentGateway.WebApi
             services.AddMvc(o => o.EnableEndpointRouting = false);
 
             //services.AddSingleton<IEventSender, EventSender>();
-            //services.AddMediatR(typeof(EnrollAgentComandHandler).Assembly);
+            var firstAssembly=typeof(ListOfAccounts).Assembly; //handlere c1..c3
+            var secondAssembly = typeof(AllEventsHandler).Assembly; //catch all 
+            //var trdaseembly=System.Reflection.Assembly.LoadFrom("c:/a.dll");
+            services.AddMediatR(firstAssembly, secondAssembly); //get all IRequestHandler and INotificationHandler classes
 
             services.RegisterBusinessServices(Configuration);
-
             services.AddSwagger(Configuration["Identity:Authority"]);
 
             // NEVER USE
