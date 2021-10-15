@@ -37,18 +37,18 @@ namespace PaymentGateway.Application.WriteOperations
             account.Id = _database.Accounts.Count + 1;
 
             var person = _database.Persons.FirstOrDefault(x => x.Cnp == request.PersonUniqueIdentifier);
-            if (request.PersonId.HasValue)
-            {
-                person = _database.Persons.FirstOrDefault(x => x.PersonId == request.PersonId); //person id
-            }
-            else
-            {
-                person = _database.Persons.FirstOrDefault(x => x.Cnp == request.PersonUniqueIdentifier); //cnp
-            }
-            if (person == null)
-            {
-                throw new Exception("Person not found");
-            }
+            //if (request.PersonId.HasValue)
+            //{
+            //    person = _database.Persons.FirstOrDefault(x => x.PersonId == request.PersonId); //person id
+            //}
+            //else
+            //{
+            //    person = _database.Persons.FirstOrDefault(x => x.Cnp == request.PersonUniqueIdentifier); //cnp
+            //}
+            //if (person == null)
+            //{
+            //    throw new Exception("Person not found");
+            //}
 
             _database.Accounts.Add(account);
             _database.SaveChanges();

@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace PaymentGateway.Application.WriteOperations
 {
-    public class PurchaseProductOperation : IRequest<PurchaseProductCommand>
+    public class PurchaseProductOperation : IRequestHandler<PurchaseProductCommand>
     {
         private readonly IMediator _mediator;
         private readonly Database _database;

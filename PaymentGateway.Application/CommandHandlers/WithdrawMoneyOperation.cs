@@ -13,7 +13,7 @@ using System.Threading;
 
 namespace PaymentGateway.Application.WriteOperations
 {
-    public class WithdrawMoneyOperation : IRequest<WithdrawMoneyCommand>
+    public class WithdrawMoneyOperation : IRequestHandler<WithdrawMoneyCommand>
     {
         private readonly IMediator _mediator;
         private readonly Database _database;

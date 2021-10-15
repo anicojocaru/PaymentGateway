@@ -72,6 +72,7 @@ namespace PaymentGateway
                 Name = "Gigi Popa",
                 Currency = "EUR",
                 UniqueIdentifier = "23"
+           
             };
 
             //var enrollCustomerOperation = serviceProvider.GetRequiredService<EnrollCustomerOperation>();
@@ -96,7 +97,10 @@ namespace PaymentGateway
             {
                 PersonUniqueIdentifier = "23",
                 Type = "Debit",
-                Currency = "EUR"
+                Currency = "EUR",
+                Iban="203930494309",
+                PersonId=001
+                
             };
             var createAccount2 = new CreateAccountCommand
             {

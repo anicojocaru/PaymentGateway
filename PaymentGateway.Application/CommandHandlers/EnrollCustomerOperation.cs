@@ -13,7 +13,7 @@ using System.Threading;
 
 namespace PaymentGateway.Application.WriteOperations
 {
-    public class EnrollCustomerOperation : IRequest<EnrollCustomerCommand>
+    public class EnrollCustomerOperation : IRequestHandler<EnrollCustomerCommand>
     {
         private readonly Database _database;
         private readonly IMediator _mediator;
