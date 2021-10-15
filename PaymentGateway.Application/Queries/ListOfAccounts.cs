@@ -28,18 +28,26 @@ namespace PaymentGateway.Application.Queries
                 }).WithMessage("Customer not found");
             }
         }
-    public class Validator2:AbstractValidator<Query>
-    {
-            public Validator2(Database _database)
+        public class Validator2 : AbstractValidator<Query>
+        {
+            public Validator2(Database database)
             {
-                RuleFor(q => q).Must(query =>
+                RuleFor(q => q.PersonId).Must(personId =>
                 {
-                    var person = query.PersonId.HasValue ?
-                    _database.Persons.FirstOrDefault(x => x.Id == query.PersonId) :
-                    _database.Persons.FirstOrDefault(x => x.Cnp == query.Cnp);
-                    return person != null;
-                }).WithMessage("Customer not found");
-            }   
+                    return personId.HasValue;
+                }).WithMessage("Customer data is invalid - personid");
+
+                RuleFor(q => q.Cnp).Must(cnp =>
+                {
+                    return !string.IsNullOrEmpty(cnp);
+                }).WithMessage("CNP is empty");
+
+                RuleFor(q => q.PersonId).Must(personId =>
+                {
+                    var exists = database.Persons.Any(x => x.Id == personId);
+                    return exists;
+                }).WithMessage("Customer does not exist");
+            }
         }
         public class Query : IRequest<List<Model>>
         {

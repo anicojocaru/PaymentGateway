@@ -39,7 +39,7 @@ namespace PaymentGateway
             var services = new ServiceCollection();
             var source = new CancellationTokenSource();
             var cancellationToken = source.Token;
-               //services.AddMediatR(typeof(ListOfAccounts).Assembly, typeof(AllEventsHandler).Assembly);
+            services.AddMediatR(typeof(ListOfAccounts).Assembly, typeof(AllEventsHandler).Assembly);
             services.RegisterBusinessServices(Configuration);
                //services.AddSingleton<IEventSender, EventSender>();
             services.Scan(scan => scan
@@ -54,7 +54,7 @@ namespace PaymentGateway
             services.AddScoped(typeof(IPipelineBehavior<,>), typeof(RequestPostProcessorBehavior<,>));
             services.AddScoped(typeof(IRequestPreProcessor<>), typeof(ValidationPreProcessor<>));
 
-            //services.AddScopedContravariant<INotificationHandler<INotification>, AllEventsHandler>(typeof(CustomerEnrolled).Assembly);
+            services.AddScopedContravariant<INotificationHandler<INotification>, AllEventsHandler>(typeof(CustomerEnrolled).Assembly);
 
             services.AddSingleton(Configuration);
 

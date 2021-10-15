@@ -13,6 +13,7 @@ using MediatR.Pipeline;
 using FluentValidation;
 using PaymentGateway.WebApi.MediatorPipeline;
 using PaymentGateway.WebApi.Middleware;
+using PaymentGateway.PublishLanguage.Events;
 
 namespace PaymentGateway.WebApi
 {
@@ -45,8 +46,8 @@ namespace PaymentGateway.WebApi
             services.AddScoped(typeof(IPipelineBehavior<,>), typeof(RequestPreProcessorBehavior<,>));
             services.AddScoped(typeof(IPipelineBehavior<,>), typeof(RequestPostProcessorBehavior<,>));
             services.AddScoped(typeof(IRequestPreProcessor<>), typeof(ValidationPreProcessor<>));
-
-            //services.AddScopedContravariant<INotificationHandler<INotification>, AllEventsHandler>(typeof(CustomerEnrolled).Assembly);
+            
+            services.AddScopedContravariant<INotificationHandler<INotification>, AllEventsHandler>(typeof(CustomerEnrolled).Assembly);
 
             services.RegisterBusinessServices(Configuration);
             services.AddSwagger(Configuration["Identity:Authority"]);
