@@ -9,29 +9,44 @@ using PaymentGateway.Application.WriteOperations;
 using PaymentGateway.WebApi.Swagger;
 using MediatR;
 using PaymentGateway.Application.Queries;
-
+using MediatR.Pipeline;
+using FluentValidation;
+using PaymentGateway.WebApi.MediatorPipeline;
+using PaymentGateway.WebApi.Middleware;
 
 namespace PaymentGateway.WebApi
 {
     public class Startup
     {
         public IConfiguration Configuration { get; }
-
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
-
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
             services.AddMvc(o => o.EnableEndpointRouting = false);
 
             //services.AddSingleton<IEventSender, EventSender>();
-            var firstAssembly=typeof(ListOfAccounts).Assembly; //handlere c1..c3
-            var secondAssembly = typeof(AllEventsHandler).Assembly; //catch all 
+            //var firstAssembly=typeof(ListOfAccounts).Assembly; //handlere c1..c3
+            //var secondAssembly = typeof(AllEventsHandler).Assembly; //catch all 
             //var trdaseembly=System.Reflection.Assembly.LoadFrom("c:/a.dll");
-            services.AddMediatR(firstAssembly, secondAssembly); //get all IRequestHandler and INotificationHandler classes
+            //services.AddMediatR(firstAssembly, secondAssembly); //get all IRequestHandler and INotificationHandler classes
+
+            services.Scan(scan => scan
+                .FromAssemblyOf<ListOfAccounts>()
+                .AddClasses(classes => classes.AssignableTo<IValidator>())
+                .AsImplementedInterfaces()
+                .WithScopedLifetime());
+
+            services.AddMediatR(new[] { typeof(ListOfAccounts).Assembly, typeof(AllEventsHandler).Assembly }); // get all IRequestHandler and INotificationHandler classes
+
+            services.AddScoped(typeof(IPipelineBehavior<,>), typeof(RequestPreProcessorBehavior<,>));
+            services.AddScoped(typeof(IPipelineBehavior<,>), typeof(RequestPostProcessorBehavior<,>));
+            services.AddScoped(typeof(IRequestPreProcessor<>), typeof(ValidationPreProcessor<>));
+
+            //services.AddScopedContravariant<INotificationHandler<INotification>, AllEventsHandler>(typeof(CustomerEnrolled).Assembly);
 
             services.RegisterBusinessServices(Configuration);
             services.AddSwagger(Configuration["Identity:Authority"]);
@@ -42,6 +57,7 @@ namespace PaymentGateway.WebApi
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IConfiguration configuration)
         {
+            app.UseMiddleware<ErrorMiddleware>(); // error 
             app.UseCors(cors =>
             {
                 cors

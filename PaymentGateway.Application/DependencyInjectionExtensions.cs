@@ -24,7 +24,7 @@ namespace PaymentGateway.Application
 
             services.AddTransient<Data.Database>();
 
-            services.AddTransient<IValidator<Query>, Validator>();
+            //services.AddTransient<IValidator<Query>, Validator>();
 
             services.AddTransient<QueryHandler>();
 

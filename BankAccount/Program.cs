@@ -13,7 +13,12 @@ using MediatR;
 using System.Threading.Tasks;
 using System.Threading;
 using PaymentGateway.Data;
-
+//using static PaymentGateway.PublishLanguage.Commands.MultiplePurchaseCommand;
+using System.Collections.Generic;
+using FluentValidation;
+using MediatR.Pipeline;
+using PaymentGateway.WebApi.MediatorPipeline;
+using PaymentGateway.PublishLanguage.Events;
 
 namespace PaymentGateway
 {
@@ -34,11 +39,23 @@ namespace PaymentGateway
             var services = new ServiceCollection();
             var source = new CancellationTokenSource();
             var cancellationToken = source.Token;
-
-            services.AddMediatR(typeof(ListOfAccounts).Assembly, typeof(AllEventsHandler).Assembly);
+               //services.AddMediatR(typeof(ListOfAccounts).Assembly, typeof(AllEventsHandler).Assembly);
             services.RegisterBusinessServices(Configuration);
+               //services.AddSingleton<IEventSender, EventSender>();
+            services.Scan(scan => scan
+                .FromAssemblyOf<ListOfAccounts>()
+                .AddClasses(classes => classes.AssignableTo<IValidator>())
+                .AsImplementedInterfaces()
+                .WithScopedLifetime());
 
-            //services.AddSingleton<IEventSender, EventSender>();
+            services.AddMediatR(new[] { typeof(ListOfAccounts).Assembly, typeof(AllEventsHandler).Assembly }); // get all IRequestHandler and INotificationHandler classes
+
+            services.AddScoped(typeof(IPipelineBehavior<,>), typeof(RequestPreProcessorBehavior<,>));
+            services.AddScoped(typeof(IPipelineBehavior<,>), typeof(RequestPostProcessorBehavior<,>));
+            services.AddScoped(typeof(IRequestPreProcessor<>), typeof(ValidationPreProcessor<>));
+
+            //services.AddScopedContravariant<INotificationHandler<INotification>, AllEventsHandler>(typeof(CustomerEnrolled).Assembly);
+
             services.AddSingleton(Configuration);
 
          // build
@@ -50,10 +67,10 @@ namespace PaymentGateway
          //ENROLL CUSTOMER USE CASE 
             var enrollCustomer = new EnrollCustomerCommand
             {
-                ClientType = "Company",
+                ClientType = "Individual",
                 AccountType = "Debit",
                 Name = "Gigi Popa",
-                Currency = "Eur",
+                Currency = "EUR",
                 UniqueIdentifier = "23"
             };
 
@@ -79,27 +96,42 @@ namespace PaymentGateway
             {
                 PersonUniqueIdentifier = "23",
                 Type = "Debit",
-                Currency = "Eur"
+                Currency = "EUR"
+            };
+            var createAccount2 = new CreateAccountCommand
+            {
+                PersonUniqueIdentifier = "23",
+                Type = "Debit",
+                Currency = "RON"
             };
             //var makeAccountOperation = serviceProvider.GetRequiredService<CreateAccount>();
             //makeAccountOperation.Handle(makeAccountDetails, default).GetAwaiter().GetResult();
 
             await mediator.Send(createAccountDetails, cancellationToken);
+            //await mediator.Send(createAccount2, cancellationToken);
 
             //////////////////////////////////////////////////////////////
             //DEPOSIT MONEY useCase
             var makeDeposit = new DepositMoneyCommand
             {
                 IbanOfAccount = createAccountDetails.Iban,
-                Ammount = 23,
-                Currency = "Eur",
+                Ammount = 230,
+                Currency = "EUR",
+                Date = DateTime.UtcNow
+            };
+            var makeDeposit2 = new DepositMoneyCommand
+            {
+                IbanOfAccount = createAccount2.Iban,
+                Ammount = 500,
+                Currency = "RON",
                 Date = DateTime.UtcNow
             };
 
             //var makeDeposit = serviceProvider.GetRequiredService<DepositMoney>();
             //makeDeposit.Handle(depositDetails, default).GetAwaiter().GetResult();
             await mediator.Send(makeDeposit, cancellationToken);
-           
+            //await mediator.Send(makeDeposit2, cancellationToken);
+
             /////////////////////////////////////////////////
             ///MAKE WITHDRAW use case
             var makeWithdraw = new WithdrawMoneyCommand
@@ -116,27 +148,67 @@ namespace PaymentGateway
 
             /////////////////////////////////////////////////////////////
             //PURCHASE PRODUCT useCase
-            //Product product = new Product();
-            //product.Limit = 10000;
+            //var produs = new Product
+            //{
+            //    Id = 1,
+            //    Limit = 10,
+            //    Name = "Pantofi",
+            //    Currency = "Eur",
+            //    Value = 10
+            //};
 
-            //PurchaseProductCommand purchaseProduct = new PurchaseProductCommand();
-            //purchaseProduct.Currency = "RON";
-            //purchaseProduct.Value = 25;
-            //purchaseProduct.Limit = 10;
-            //purchaseProduct.Name = "produs1";
-            //purchaseProduct.IbanOfAccount = account.Iban;
+            //var produs1 = new Product
+            //{
+            //    Id = 2,
+            //    Limit = 5,
+            //    Name = "pantaloni",
+            //    Currency = "Eur",
+            //    Value = 5
+            //};
 
-            //PurchaseProductOperation purchaseOperation = new PurchaseProductOperation(eventSender);
-            //purchaseOperation.PerformOperation(purchaseProduct);
+            //var produs2 = new Product
+            //{
+            //    Id = 3,
+            //    Limit = 3,
+            //    Name = "Camasa",
+            //    Currency = "Eur",
+            //    Value = 3
+            //};
 
-            var query = new Application.Queries.ListOfAccounts.Query
-            {
-                PersonId = 1
-            };
+            //database.Products.Add(produs);
+            //database.Products.Add(produs1);
+            //database.Products.Add(produs2);
+
+            //var listaProduse = new List<CommandDetails>();
+
+            //var prodCmd1 = new CommandDetails
+            //{
+            //    ProductId = 1,
+            //    Quantity = 2
+            //};
+            //listaProduse.Add(prodCmd1);
+
+            //var prodCmd2 = new CommandDetails
+            //{
+            //    ProductId = 2,
+            //    Quantity = 3
+            //};
+            //listaProduse.Add(prodCmd2);
+
+            //var comanda = new PurchaseProductCommand
+            //{
+            //    Details = listaProduse,
+            //    IbanOfAccount = createAccount2.Iban
+            //};
+
+            //var query = new Application.Queries.ListOfAccounts.Query
+            //{
+            //    PersonId = 1
+            //};
 
             //var handler = serviceProvider.GetRequiredService<ListOfAccounts.QueryHandler>();
             //var result = handler.Handle(query, default).GetAwaiter().GetResult();
-            var result = await mediator.Send(query, cancellationToken);
+            //var result = await mediator.Send(query, cancellationToken);
 
 
         }

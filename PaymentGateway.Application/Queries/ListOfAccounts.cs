@@ -7,28 +7,39 @@ using System.Text;
 using System.Threading.Tasks;
 using MediatR;
 using System.Threading;
+using FluentValidation;
+using static PaymentGateway.Application.Queries.ListOfAccounts.Validator2;
 
 namespace PaymentGateway.Application.Queries
 {
     public class ListOfAccounts
     {
-        public class Validator : IValidator<Query>
+        public class Validator : AbstractValidator<Query>
         {
-            private readonly Database _database;
-
-            public Validator(Database database)
+            public Validator(Database _database)
             {
-                _database = database;
-            }
+                RuleFor(q => q).Must(query =>
+                {
+                    var person = query.PersonId.HasValue ?
+                    _database.Persons.FirstOrDefault(x => x.Id == query.PersonId) :
+                    _database.Persons.FirstOrDefault(x => x.Cnp == query.Cnp);
 
-            public bool Validate(Query input)
+                    return person != null;
+                }).WithMessage("Customer not found");
+            }
+        }
+    public class Validator2:AbstractValidator<Query>
+    {
+            public Validator2(Database _database)
             {
-                var person = input.PersonId.HasValue ?
-                    _database.Persons.FirstOrDefault(x => x.Id == input.PersonId) :
-                    _database.Persons.FirstOrDefault(x => x.Cnp == input.Cnp);
-
-                return person != null;
-            }
+                RuleFor(q => q).Must(query =>
+                {
+                    var person = query.PersonId.HasValue ?
+                    _database.Persons.FirstOrDefault(x => x.Id == query.PersonId) :
+                    _database.Persons.FirstOrDefault(x => x.Cnp == query.Cnp);
+                    return person != null;
+                }).WithMessage("Customer not found");
+            }   
         }
         public class Query : IRequest<List<Model>>
         {
@@ -39,23 +50,13 @@ namespace PaymentGateway.Application.Queries
         public class QueryHandler : IRequestHandler<Query, List<Model>>
         {
             private readonly Database _database;
-            private readonly IValidator<Query> _validator;
-
-            public QueryHandler(Database database, IValidator<Query> validator)
+            public QueryHandler(Database database)
             {
                 _database = database;
-                _validator = validator;
             }
 
             public Task<List<Model>> Handle(Query request, CancellationToken cancellationToken)
             {
-                var isValid = _validator.Validate(request);
-
-                if (!isValid)
-                {
-                    throw new Exception("Person not found");
-                }
-
                 var person = request.PersonId.HasValue ?
                    _database.Persons.FirstOrDefault(x => x.Id == request.PersonId) :
                    _database.Persons.FirstOrDefault(x => x.Cnp == request.Cnp);
@@ -74,7 +75,6 @@ namespace PaymentGateway.Application.Queries
                 return Task.FromResult(result);
             }
         }
-
         public class Model
         {
             public int Id { get; set; }
